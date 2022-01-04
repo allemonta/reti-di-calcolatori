@@ -1,0 +1,56 @@
+{
+    "srv1": {
+        "interfaces": {
+            "eth0": {
+                "type": "static",
+                "address": "192.168.1.1/24",
+                "gateway": "192.168.1.254"
+            }
+        }
+    },
+    "srv2": {
+        "interfaces": {
+            "eth0": {
+                "type": "dhcp",
+                "macaddress": "02:04:06:c0:2d:9b"
+            }
+        }
+    },
+    "gw1": {
+        "interfaces": {
+            "eth0": {
+                "type": "static",
+                "address": "192.168.1.2/24"
+            },
+            "eth1": {
+                "type": "static",
+                "address": "1.1.1.1",
+                "snat": true,
+                "dnat": [{
+                    "externalPort": 8080,
+                    "internalIp": "192.168.1.1",
+                    "internalPort": 80,
+                    "protocol": "tcp"
+                }],
+                "routes": [{
+                    "destination": "2.2.2.2"
+                }]
+            }
+        },
+        "dhcp": {
+            "interfaces": "eth0",
+            "settings": [{
+                "name": "192-168-1",
+                "subnet": "192.168.1.0",
+                "netmask": "255.255.255.0",
+                "gateway": "192.168.1.254",
+                "poolRange": "192.168.1.10 192.168.1.19"
+            }],
+            "staticAddresses": [{
+                "serverName": "server1",
+                "macAddress": "02:04:06:c0:2d:9b",
+                "address": "192.168.1.3"
+            }]
+        }
+    }
+}

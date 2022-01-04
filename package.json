@@ -1,0 +1,12 @@
+{
+  "name": "reti",
+  "version": "1.0.0",
+  "description": "Reti di calcolatori",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
