@@ -69,8 +69,10 @@ Per specificare su quali interfacce si deve attivare il DHCP si deve modificare 
 
 Per configurare i parametri DHCP si deve invece modificare il file `/etc/dhcp/dhcpd.conf` con le configurazioni riportate di seguito a seconda delle necessità:
 
-Per impostare i parametri DHCP di una rete con indirizzo di rete `192.168.1.0/32`, gateway raggiungibile al `192.168.1.254` e pool di indirizzi da servire dal `.10` al `.19`
+Per impostare i parametri DHCP di una rete con indirizzo di rete `192.168.1.0/32`, gateway raggiungibile al `192.168.1.254` e pool di indirizzi da servire dal `.10` al `.19` (`authoritative;` da impostare una sola volta per tutto il file)
 ```
+authoritative;
+
 shared-network 192-168-1 {
   subnet 192.168.1.0 netmask 255.255.255.0 {
     option routers 192.168.1.254;

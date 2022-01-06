@@ -78,7 +78,7 @@ ${interfaceCode}
 " >> /etc/network/interfaces
 
 ${dhcpCode !== "" ? `
-apt install isc-dhcp-server
+# apt install isc-dhcp-server
 
 sed -i "s/INTERFACES=\\"\\"/INTERFACES=\\"${host.dhcp.interfaces}\\"/g" /etc/default/isc-dhcp-server
 
