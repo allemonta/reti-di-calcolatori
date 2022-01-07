@@ -50,17 +50,31 @@ vlan/create 10
 ```
 
 Aggiungere la porta `3` alla VLAN `10` (tagged, alla porta `3` c'è solo la VLAN `10`)
-```
+```sh
+# port/setvlan PORT VLAN  
 port/setvlan 3 10
 ```
 
 Aggiungere la porta `4` alla VLAN `10` e `20` (untagged, alla porta `4` possono coesistere più VLAN)
-```
-vlan/addport 4 10
-vlan/addport 4 20
+```sh
+# vlan/addport VLAN PORT
+vlan/addport 10 4
+vlan/addport 20 4
 ```
 
 In generale il GW che farà da tramite per le 2 VLAN non dovrà avere delle configurazioni con `eth0` ma con `eth0.x` se necessario.
+
+Ad esempio, se GW[1] gestisce le VLAN `10` e `20` ai quali sono collegati rispettivamente Srv1[2] e Srv2[3]
+```
+vlan/create 10
+vlan/create 20
+
+vlan/addport 10 1
+vlan/addport 20 1
+
+port/setvlan 2 10
+port/setvlan 3 20
+```
 
 ## Setup DHCP
 Sulla macchina che farà da server DHCP si deve installare il servizio con `apt install isc-dhcp-server`.
@@ -99,7 +113,17 @@ Una volta configurato il tutto:
 - Per avviare il server DHCP: `service isc-dhcp-server start`
 - Per attivare il servizio all'avvio del server: `systemctl enable isc-dhcp-server`
 
+# Routing
+Una volta impostati i vari indirizzi IP si possono impostare anche le tabelle di route, specificando dove trovare gli altri indirizzi IP. Si deve aggiungere un `post-up` nell'interfaccia alla quale si può raggiungere il secondo host.
+
+Per aggiungere una route dall'host corrente, collegato con `eth0` verso uno switch al quale è collegato l'host destinatario `1.1.1.1` allora: `post-up route add -host 1.1.1.1 dev eth0`.
+
+In maniera reciproca si dovrà aggiungere una route dall'host `1.1.1.1` verso l'host utilizzato.
+
 # Natting
+
+SNAT -> postrouting
+DNAT -> prerouting
 
 Per visualizzare le regole di NAT: `iptables -t nat -L -v -n`
 Per eliminare una regola di NAT: `iptable -t nat -D POSTROUTING <rule_number>`
@@ -141,12 +165,41 @@ nc -u <gateway_address> <external_port>
 ```
 
 # Traffic shaping
-Creo un disco fuffa da usare come buffer
+Easy: aggiungo un filtro di 1Mbit sull'interfaccia eth0:
+```sh
+tc qdisc add dev eth0 root tbf rate 1Mbit latency 50ms burst 1539
+```
+
+Complicato: creo 2 filtri, uno che permette più velocità (`1:20`, di default min 20Mbit, max 50Mbit) e uno che ne permette meno (`1:10`). Creiamo poi una regola che rediriga i pacchetti con destinazione `192.168.1.2` verso il giltro `1:10`.
+```sh
+# Elimino la classe precedente
+tc qdisc del root dev eth0
+
+# Inseriamo la qdisk HBT nella root, specificando la default 20 e creiamo la classe associata
+tc qdisc add dev eth0 root handle 1: htb default 20
+tc class add dev eth0 parent 1: classid 1:1 htb rate 100Mbit burst 15k
+
+# Aggiungiamo le 2 classi figlie 1:10 e 1:20
+tc class add dev eth0 parent 1:1 classid 1:10 htb rate 1Mbit burst 15k
+tc class add dev eth0 parent 1:1 classid 1:20 htb rate 20Mbit ceil 50Mbit burst 15k
+
+# Facciamo collegamenti
+tc qdisc add dev eth0 parent 1:10 handle 10: pfifo limit 50
+tc qdisc add dev eth0 parent 1:20 handle 20: pfifo limit 50
+
+# Creiamo la regola per dest 192.168.1.2
+tc filter add dev eth0 protocol ip parent 1:0 prio 1 u32 match ip dst 192.168.1.2 flowid 1:10
+```
+
+## Testing
+Creo un file fuffa da usare per inviare traffico per fare le prove (in questo caso 1024b * 1000 = 1MB, può anche essere `bs=1M`)
 ```
 dd if=/dev/zero of=prova.bin bs=1024 count=1000
 ```
 
-TODO
+Mi metto in ascolto sulla macchina ricevente: `nc -l -p 8080 > /dev/null`
+
+Calcolo il tempo di invio del file fuffa: `time sh -c "cat file.bin | nc 192.168.1.2 8080 -q1"`
 
 # Utils
 Pulizia delle interfacce
@@ -162,11 +215,3 @@ Per assegnare in modo permanente l'hostname alla macchina modificare il file `/e
 Per gestire temporaneamente le interfacce:
 - Attivare interfaccia: `ifup <iface>`
 - Disattivare interfaccia: `ifdown <iface>`
-
-## Da aggiungere
-Per aggiungere una route dall'host corrente verso 1.1.1.1 gli possiamo dire di usare l'interfaccia eth0 (es. con gateway e extServer si devono impostare le regole reciproche). Gli altri post-up mai usati (TODO: guarda slide comunque)
-post-up route add -host 1.1.1.1 dev eth0
-
-
-SNAT -> postrouting
-DNAT -> prerouting

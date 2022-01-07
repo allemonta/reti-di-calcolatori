@@ -77,15 +77,15 @@ echo "
 ${interfaceCode}
 " >> /etc/network/interfaces
 
-${dhcpCode !== "" ? `
-# apt install isc-dhcp-server
-
-sed -i "s/INTERFACES=\\"\\"/INTERFACES=\\"${host.dhcp.interfaces}\\"/g" /etc/default/isc-dhcp-server
-
 ${natting ? `
 sed -i "s/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g" /etc/sysctl.conf
 sysctl -p /etc/sysctl.conf
 ` : ""}
+
+${dhcpCode !== "" ? `
+# apt install isc-dhcp-server
+
+sed -i "s/INTERFACES=\\"\\"/INTERFACES=\\"${host.dhcp.interfaces}\\"/g" /etc/default/isc-dhcp-server
 
 echo "
 
