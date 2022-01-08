@@ -194,7 +194,7 @@ tc filter add dev eth0 protocol ip parent 1:0 prio 1 u32 match ip dst 192.168.1.
 ## Testing
 Creo un file fuffa da usare per inviare traffico per fare le prove (in questo caso 1024b * 1000 = 1MB, può anche essere `bs=1M`)
 ```
-dd if=/dev/zero of=prova.bin bs=1024 count=1000
+dd if=/dev/zero of=file.bin bs=1024 count=1000
 ```
 
 Mi metto in ascolto sulla macchina ricevente: `nc -l -p 8080 > /dev/null`
@@ -215,3 +215,4 @@ Per assegnare in modo permanente l'hostname alla macchina modificare il file `/e
 Per gestire temporaneamente le interfacce:
 - Attivare interfaccia: `ifup <iface>`
 - Disattivare interfaccia: `ifdown <iface>`
+- Stare in ascolto su una interfaccia `tcpdump` (per una in particolare `-i eth0`)
